@@ -119,7 +119,7 @@ def readMDATA(filename):
 #    print "USE_COO ",USE_COO
     if USE_COO:
         if not len(coos):
-            print "No coordinates"
+            print("No coordinates")
             exit(1)
         for (li,(xi,yi)) in coos.items():
             for (lj,(xj,yj)) in coos.items():
@@ -134,10 +134,10 @@ def readMDATA(filename):
 #    print expl
     # add empty list for those without adjacent locs
     for l in ALOCS:
-        if not ADJ.has_key(l):
+        if not ADJ.get(l):
             ADJ[l] = list()
     for c in CELLS:
-        if not d.has_key(c):
+        if not d.get(c):
             d[c] = 1.0
     if scale_factor == None:
         scale_factor = 1.0/reachable_demand
