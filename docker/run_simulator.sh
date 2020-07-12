@@ -10,5 +10,5 @@ docker run -it  --rm \
        -v ${SHAREDVOL} \
        --privileged \
        --net="host"\
-       eduardofeo:swarmix-full \
+       eduardofeo/swarmix:full \
        /launch/simulator ${@:2} -ep ${SHAREDVOL}
