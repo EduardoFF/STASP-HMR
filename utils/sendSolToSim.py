@@ -86,9 +86,10 @@ def sendAdvanceSimTime(sock, server_addr, t):
 if __name__ == "__main__":
     parser = optparse.OptionParser(usage="usage: %prog [options] filename",
                                    version="%prog 1.0")
-    parser.add_option("--nice",
+
+    parser.add_option("--run",
                       action="store_true",
-                      help="show plans for agents")
+                      help="advance time in simulator")
 
     (options, args) = parser.parse_args()
     if len(args) == 0:
@@ -122,7 +123,8 @@ if __name__ == "__main__":
         print("")
     print("MAXTIME = ", maxtime)
     # send the SIM CTRL_ADVANCE_TIME to port 12345
-    server_address = ('localhost', 12345)
-    sendAdvanceSimTime(sock, server_address, (maxtime+1)*300)
+    if options.run:
+        server_address = ('localhost', 12345)
+        sendAdvanceSimTime(sock, server_address, (maxtime+1)*300)
 
     sock.close()
