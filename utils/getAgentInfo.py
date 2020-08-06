@@ -20,6 +20,9 @@ if __name__ == "__main__":
         raise SystemExit
 
     numberOfAgents = int(args[0])
+    # start simulator interface
+    initSimulatorInterface(numberOfAgents)
+
 
     while True:
         c = input()

@@ -4,6 +4,103 @@ import sys
 import socket
 import time
 
+import socketserver, threading, time
+
+main_thread = None
+server = dict()
+server_thread = dict()
+
+_numAgents = None
+_base_inport = 12220
+_covmaps=dict()
+_neighbours=dict()
+_locs=dict()
+
+_lock = threading.Lock()
+
+class ThreadedUDPHandler(socketserver.BaseRequestHandler):
+#    def __init__(self, request, client_address, server, agentId):
+#        super().__init__(request, client_address, server)
+#        self.agentId = agentId
+
+    def handle(self):
+        global _covmaps, _neighbours, _locs, _lock
+        self.agentId = 0
+        data = self.request[0].strip()
+        socket = self.request[1]
+        current_thread = threading.current_thread()
+#        print("Agent {} {}: client: {}, wrote: {}".format(self.agentId, current_thread.name, self.client_address, data))
+        if len(data) == 0:
+                print("Empty msg")
+        else:
+            # I got something
+            strdata = data.decode('utf-8')
+            # get agent id
+            i = strdata.find('agentId')
+            j = strdata.find(',',i+1)
+            agentId=int(strdata[i:j].split()[1])
+            #print("AgentId: ", agentId)
+
+            #print(strdata)
+            if "COVERAGEMAP" in strdata:
+                #print("received message")
+                _lock.acquire()
+                _covmaps[agentId] = parseCoverageMap(strdata)
+                _lock.release()
+                print("Got CoverageMap from ", agentId)
+                #print("==========   COVERAGEMAP  ===========")
+                # dictionary taskid -> [0,1] (1 is not completed, 0 completed; remaining work)
+                #print(covmap)
+                gotCov=True
+            if "NEIGHBOURS" in strdata:
+                #print("received message")
+                _lock.acquire()
+                _neighbours[agentId] = parseNeighbours(strdata)
+                _lock.release()
+                print("Got Neighbours from ", agentId)
+                #print("==========   NEIGHBOURS  ===========")
+                # dictionary: agentid -> lasttimeseen (int)
+                #print(neighbours)
+                gotNeighbours=True
+            if "CNTCELL" in strdata:
+                #print("received message")
+                _lock.acquire()
+                _locs[agentId] = parseLocation(strdata)
+                _lock.release()
+                print("Got Current Location from ", agentId)
+                #print("==========   LOCATION (TASK)  ===========")
+                # dictionary: agentid -> lasttimeseen (int)
+                #print(taskid)
+                gotCntLoc=True
+
+
+
+def _init():
+    global server, server_thread, _numAgents, _base_inport
+    for i in range(1,_numAgents+1):
+        HOST, PORT = "0.0.0.0", _base_inport + i
+        server[i] = socketserver.UDPServer((HOST, PORT), ThreadedUDPHandler)
+        server_thread[i] = threading.Thread(target=server[i].serve_forever)
+        server_thread[i].daemon = True
+        server_thread[i].start()
+        print("Server started at {} port {}".format(HOST, PORT))
+    try:
+        while True: time.sleep(100)
+    except (KeyboardInterrupt, SystemExit):
+        for i in range(1,_numAgents+1):
+            server[i].shutdown()
+            server[i].server_close()
+        exit()
+
+
+
+def initSimulatorInterface(numAgents, base_inport=12220):
+    global main_thread, _numAgents, _base_inport
+    _numAgents = numAgents
+    _base_inport = base_inport
+
+    main_thread = threading.Thread(target=_init)
+    main_thread.start()
 
 
 def parseCoverageMap(strcovmap):
@@ -144,7 +241,7 @@ def sendAdvanceSimTime(t):
     socketout.close()
 
 
-def getResponseFromAgent(agentId, base_inport=12220):
+def getResponseFromAgent(agentId):
     udpInPort = base_inport + agentId
     socketin = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     socketin.bind(("0.0.0.0", udpInPort))
@@ -212,9 +309,6 @@ def getResponseFromAgent(agentId, base_inport=12220):
     socketin.close()
     return covmap, neighbours, taskid
 
-
-
-
 def getInfo(nAgents):
     # send requests
     covmaps=dict()
@@ -225,9 +319,14 @@ def getInfo(nAgents):
         sendInfoRequestToAgent(i)
         # advance time ( 1 seconds should be fine)
         # remember to update time in your code
-        sendAdvanceSimTime(1)
-        cmap, neigh, loc = getResponseFromAgent(i)
-        covmaps[i] =  cmap
-        neighbours[i] = neigh
-        locs[i] = loc
-    return covmaps, neighbours, locs
+
+    sendAdvanceSimTime(1)
+    time.sleep(1)
+
+    #for i in range(1,nAgents+1):
+    #    sendInfoRequestToAgent(i)
+    #    cmap, neigh, loc = getResponseFromAgent(i)
+    #    covmaps[i] =  cmap
+    #    neighbours[i] = neigh
+    #    locs[i] = loc
+    return _covmaps.copy(), _neighbours.copy(), _locs.copy()
