@@ -50,6 +50,19 @@ if __name__ == "__main__":
                     print("\t{}\t{}".format(taskid,covmaps[i][taskid]))
                 print("")
 
+        # requesting coverage map and neighbours
+        if c == 'G' or c == 'g':
+            # get all info
+            # each var is a dict agentid -> data
+            covmap = getGlobalCoverage()
+
+            # print info
+            tasks = list(covmap.keys())
+            tasks.sort()
+            print("Global CoverageMap: ")
+            for taskid in tasks:
+                print("\t{}\t{}".format(taskid,covmap[taskid]))
+                print("")
 
 
 

@@ -77,7 +77,7 @@ class ThreadedUDPHandler(socketserver.BaseRequestHandler):
 
 def _init():
     global server, server_thread, _numAgents, _base_inport
-    for i in range(1,_numAgents+1):
+    for i in range(0,_numAgents+1):
         HOST, PORT = "0.0.0.0", _base_inport + i
         server[i] = socketserver.UDPServer((HOST, PORT), ThreadedUDPHandler)
         server_thread[i] = threading.Thread(target=server[i].serve_forever)
@@ -87,10 +87,11 @@ def _init():
     try:
         while True: time.sleep(100)
     except (KeyboardInterrupt, SystemExit):
-        for i in range(1,_numAgents+1):
+        print("Shutting down servers ...")
+        for i in range(0,_numAgents+1):
             server[i].shutdown()
             server[i].server_close()
-        exit()
+            server_thread[i].join()
 
 
 
@@ -99,8 +100,11 @@ def initSimulatorInterface(numAgents, base_inport=12220):
     _numAgents = numAgents
     _base_inport = base_inport
 
-    main_thread = threading.Thread(target=_init)
-    main_thread.start()
+    try:
+        main_thread = threading.Thread(target=_init)
+        main_thread.start()
+    except:
+        print("Simulator Interface exited")
 
 
 def parseCoverageMap(strcovmap):
@@ -330,3 +334,20 @@ def getInfo(nAgents):
     #    neighbours[i] = neigh
     #    locs[i] = loc
     return _covmaps.copy(), _neighbours.copy(), _locs.copy()
+
+def getGlobalCoverage():
+    # send requests
+    sendInfoRequestToAgent(0)
+        # advance time ( 1 seconds should be fine)
+        # remember to update time in your code
+
+    sendAdvanceSimTime(1)
+    time.sleep(1)
+
+    #for i in range(1,nAgents+1):
+    #    sendInfoRequestToAgent(i)
+    #    cmap, neigh, loc = getResponseFromAgent(i)
+    #    covmaps[i] =  cmap
+    #    neighbours[i] = neigh
+    #    locs[i] = loc
+    return _covmaps[0].copy()
