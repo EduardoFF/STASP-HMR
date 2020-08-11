@@ -266,6 +266,7 @@ def sendAdvanceSimTime(t):
     # some sleep, to be safe
     #time.sleep(0.001)
     socketout.close()
+    return getSimulationTime()
 
 
 def getResponseFromAgent(agentId):

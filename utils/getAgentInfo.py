@@ -53,6 +53,10 @@ if __name__ == "__main__":
         if c == 'T' or c == 't':
             print("Current time: ", getSimulationTime())
 
+        if c == 'S' or c == 's':
+            newtime = sendAdvanceSimTime(10)
+            print("Simulating 10 seconds, new time is: ", newtime)
+
         # requesting coverage map and neighbours
         if c == 'G' or c == 'g':
             # get all info
