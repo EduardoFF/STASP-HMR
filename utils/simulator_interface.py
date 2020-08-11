@@ -16,6 +16,7 @@ _covmaps=dict()
 _neighbours=dict()
 _locs=dict()
 
+_last_simtime_recv = None
 _lock = threading.Lock()
 
 class ThreadedUDPHandler(socketserver.BaseRequestHandler):
@@ -24,7 +25,7 @@ class ThreadedUDPHandler(socketserver.BaseRequestHandler):
 #        self.agentId = agentId
 
     def handle(self):
-        global _covmaps, _neighbours, _locs, _lock
+        global _covmaps, _neighbours, _locs, _lock, _last_simtime_recv
         self.agentId = 0
         data = self.request[0].strip()
         socket = self.request[1]
@@ -35,6 +36,7 @@ class ThreadedUDPHandler(socketserver.BaseRequestHandler):
         else:
             # I got something
             strdata = data.decode('utf-8')
+            #print(strdata)
             # get agent id
             i = strdata.find('agentId')
             j = strdata.find(',',i+1)
@@ -72,6 +74,11 @@ class ThreadedUDPHandler(socketserver.BaseRequestHandler):
                 # dictionary: agentid -> lasttimeseen (int)
                 #print(taskid)
                 gotCntLoc=True
+            if "SIMTIME" in strdata:
+                _lock.acquire()
+                _last_simtime_recv = parseSimTime(strdata)
+                _lock.release()
+                print("Got Current Location from ", agentId)
 
 
 
@@ -105,6 +112,22 @@ def initSimulatorInterface(numAgents, base_inport=12220):
         main_thread.start()
     except:
         print("Simulator Interface exited")
+
+
+def parseSimTime(strtime):
+    i = strtime.find("simtime")
+    if i==-1:
+        return None
+    str1 = strtime[i:]
+    j = str1.find(',')
+    str1 = str1[:j]
+    #print(str1)
+    s = str1.split()
+    #print(s)
+    if len(s) != 2:
+        return None
+    return int(s[1])
+
 
 
 def parseCoverageMap(strcovmap):
@@ -324,7 +347,7 @@ def getInfo(nAgents):
         # advance time ( 1 seconds should be fine)
         # remember to update time in your code
 
-    sendAdvanceSimTime(1)
+#    sendAdvanceSimTime(1)
     time.sleep(1)
 
     #for i in range(1,nAgents+1):
@@ -341,7 +364,7 @@ def getGlobalCoverage():
         # advance time ( 1 seconds should be fine)
         # remember to update time in your code
 
-    sendAdvanceSimTime(1)
+#    sendAdvanceSimTime(1)
     time.sleep(1)
 
     #for i in range(1,nAgents+1):
@@ -351,3 +374,23 @@ def getGlobalCoverage():
     #    neighbours[i] = neigh
     #    locs[i] = loc
     return _covmaps[0].copy()
+
+def getSimulationTime():
+    # request simulation time
+    # send a message "SIM CTRL_REQUEST_TIME " to the UDP port number of agent 0
+    # default: 12345
+    global _last_simtime_recv
+    # clear the last time recv
+    _last_simtime_recv = None
+    socketout = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server_addr = ('localhost', 12345)
+    message = "SIM CTRL_REQUEST_TIME"
+    try:
+        # Send data
+        print('sending "%s"' % message)
+        sent = socketout.sendto(bytes(message, 'UTF-8'), server_addr)
+    except Exception as e:
+        print("Error while sending ", e)
+    # some sleep, to be safe
+    time.sleep(1)
+    return _last_simtime_recv

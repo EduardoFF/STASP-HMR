@@ -50,6 +50,9 @@ if __name__ == "__main__":
                     print("\t{}\t{}".format(taskid,covmaps[i][taskid]))
                 print("")
 
+        if c == 'T' or c == 't':
+            print("Current time: ", getSimulationTime())
+
         # requesting coverage map and neighbours
         if c == 'G' or c == 'g':
             # get all info
