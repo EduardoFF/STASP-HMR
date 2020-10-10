@@ -139,7 +139,7 @@ def readMDATA(filename):
     for c in CELLS:
         if not d.get(c):
             d[c] = 1.0
-    if scale_factor == None:
+    if scale_factor == None and reachable_demand != None:
         scale_factor = 1.0/reachable_demand
 #        print "scale_factor ", scale_factor
 #    print "MAXTIME ", maxTime
